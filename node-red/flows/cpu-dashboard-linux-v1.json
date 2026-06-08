@@ -4,7 +4,7 @@
         "type": "tab",
         "label": "CPU Dashboard (Linux)",
         "disabled": false,
-        "info": "Linux CPU használat megjelenítése Node-RED Dashboard-on.\nImportálás: Menü → Import → clipboard vagy fájl."
+        "info": "FIGYELEM: Ez a flow a KLASSZIKUS node-red-dashboard csomagot igényli!\nTelepítés: cd ~/.node-red && npm install node-red-dashboard\nRestart után Deploy. URL: http://<host>:1880/ui\n\nHa nincs telepítve a csomag, használd inkább a cpu-dashboard-linux.json fájlt (FlowFuse Dashboard 2.0)."
     },
     {
         "id": "cpu_dashboard_ui_base",

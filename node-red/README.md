@@ -2,6 +2,47 @@
 
 Importálható Node-RED flow JSON fájlok Linux CPU-használat megjelenítéséhez.
 
+## „Flows stopped due to missing node types” – gyors megoldás
+
+Ha ezt látod:
+
+```
+Flows stopped due to missing node types.
+    ui_base
+    ui_tab
+    ui_group
+```
+
+akkor a **klasszikus Dashboard 1.0** flow van betöltve (`cpu-dashboard-linux-v1.json`), de a `node-red-dashboard` csomag **nincs telepítve**.
+
+### Ajánlott megoldás (FlowFuse Dashboard 2.0)
+
+1. **Töröld** a hibás flow tabot a Node-RED szerkesztőben (jobb klikk a „CPU Dashboard” fülön → Delete)
+2. Telepítsd a csomagot:
+
+```bash
+cd ~/.node-red
+npm install @flowfuse/node-red-dashboard
+```
+
+3. **Indítsd újra** a Node-RED-et
+4. Importáld: `flows/cpu-dashboard-linux.json`
+5. **Deploy**
+6. Nyisd meg: `http://<gép-címe>:1880/dashboard`
+
+### Alternatíva (klasszikus Dashboard 1.0 megtartása)
+
+Ha a régi dashboardot szeretnéd:
+
+```bash
+cd ~/.node-red
+npm install node-red-dashboard
+```
+
+Node-RED **újraindítása**, majd Deploy. A meglévő v1 flow ekkor működni fog.
+
+Dashboard URL: `http://<gép-címe>:1880/ui`
+
 ## „unknown: ui_gauge” hiba – gyors megoldás
 
 Ez a hiba azt jelenti, hogy **nincs telepítve** a megfelelő Dashboard csomag. Két út van:
@@ -81,6 +122,7 @@ Dockerben: `-v /proc:/host/proc:ro` és a function node-ban `/host/proc/stat` ú
 
 | Probléma | Megoldás |
 |----------|----------|
+| `missing: ui_base, ui_tab, ui_group` | v1 flow van deployolva csomag nélkül → telepítsd `node-red-dashboard`-ot VAGY töröld a flow-t és használd a fő `.json` fájlt FlowFuse-szal |
 | `unknown: ui_gauge` | Telepítsd: `npm install node-red-dashboard`, restart, használd a `-v1.json` fájlt |
 | `unknown: ui-gauge` | Telepítsd: `npm install @flowfuse/node-red-dashboard`, restart, használd a fő `.json` fájlt |
 | Dashboard 404 | Ellenőrizd az URL-t: `/dashboard` (v2) vagy `/ui` (v1) |
