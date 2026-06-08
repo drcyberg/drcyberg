@@ -1,37 +1,57 @@
 # Node-RED Dashboard – Linux CPU mérés
 
-Ez a mappa egy **importálható Node-RED flow JSON** fájlt tartalmaz, amely Linux alatt a processzorhasználatot jeleníti meg a Node-RED Dashboard felületén.
+Importálható Node-RED flow JSON fájlok Linux CPU-használat megjelenítéséhez.
 
-## Előfeltételek
+## „unknown: ui_gauge” hiba – gyors megoldás
 
-1. **Node-RED** telepítve és fut
-2. **Dashboard csomag** telepítve (klasszikus UI):
+Ez a hiba azt jelenti, hogy **nincs telepítve** a megfelelő Dashboard csomag. Két út van:
+
+### A) FlowFuse Dashboard 2.0 (ajánlott, új telepítésekhez)
+
+```bash
+cd ~/.node-red
+npm install @flowfuse/node-red-dashboard
+```
+
+Node-RED **újraindítása**, majd importáld:
+
+```
+flows/cpu-dashboard-linux.json
+```
+
+Dashboard URL: `http://<gép-címe>:1880/dashboard`
+
+### B) Klasszikus Dashboard 1.0 (régi `node-red-dashboard`)
 
 ```bash
 cd ~/.node-red
 npm install node-red-dashboard
 ```
 
-3. Node-RED újraindítása a telepítés után
+Node-RED **újraindítása**, majd importáld:
 
-> **Megjegyzés:** A FlowFuse új dashboard csomagja (`@flowfuse/node-red-dashboard`) más node-típusokat használ. Ez a flow a széles körben elterjedt `node-red-dashboard` (ui_* node-ok) csomaghoz készült.
+```
+flows/cpu-dashboard-linux-v1.json
+```
+
+Dashboard URL: `http://<gép-címe>:1880/ui`
+
+> **Fontos:** A csomag telepítése után mindig indítsd újra a Node-RED-et! Palette Managerből történő telepítés is működik, de restart szükséges.
+
+## Melyik flow melyik csomaghoz?
+
+| Fájl | Dashboard csomag | Node típusok | URL |
+|------|------------------|--------------|-----|
+| `cpu-dashboard-linux.json` | `@flowfuse/node-red-dashboard` | `ui-gauge`, `ui-chart`, `ui-text` | `/dashboard` |
+| `cpu-dashboard-linux-flowfuse.json` | ugyanaz (azonos tartalom) | ugyanaz | `/dashboard` |
+| `cpu-dashboard-linux-v1.json` | `node-red-dashboard` | `ui_gauge`, `ui_chart`, `ui_text` | `/ui` |
 
 ## Flow importálása
 
-1. Nyisd meg a Node-RED szerkesztőt: `http://<gép-címe>:1880`
+1. Nyisd meg: `http://<gép-címe>:1880`
 2. Menü (☰) → **Import**
-3. Válaszd a **select a file to import** lehetőséget, vagy másold be a JSON tartalmát
-4. Tallózd be a fájlt: `flows/cpu-dashboard-linux.json`
-5. Kattints az **Import** gombra
-6. **Deploy** (telepítés) a jobb felső sarokban
-
-## Dashboard megnyitása
-
-A telepítés után a dashboard elérhető:
-
-```
-http://<gép-címe>:1880/ui
-```
+3. Válaszd ki a megfelelő JSON fájlt (lásd fenti táblázat)
+4. **Deploy**
 
 ## Mit tartalmaz a flow?
 
@@ -39,41 +59,35 @@ http://<gép-címe>:1880/ui
 |------|--------|
 | **Inject** | 5 másodpercenként indít egy mérést |
 | **Function** | A `/proc/stat` fájlból számolja a CPU %-ot |
-| **Gauge** | Óra-szerű mérő 0–100% tartományban |
-| **Chart** | Idősor grafikon (utolsó 1 óra adatai) |
+| **Gauge** | Mérő 0–100% tartományban (zöld / sárga / piros zónák) |
+| **Chart** | Idősor grafikon |
 | **Text** | Szöveges aktuális érték |
 
-### Hogyan számolja a CPU-t?
-
-A function node két egymást követő mintát olvas a `/proc/stat` első sorából (`cpu` összesített sor), majd ebből számítja:
+### CPU számítás
 
 ```
 CPU% = (1 - Δidle / Δtotal) × 100
 ```
 
-Az **első mérés** gyakran `0%`, mert még nincs előző minta az összehasonlításhoz. A **második méréstől** az érték pontos.
+Az **első mérés** gyakran `0%`, mert még nincs előző minta. A **második méréstől** pontos.
 
 ## Jogosultságok
 
-A Node-RED folyamatának olvasnia kell a `/proc/stat` fájlt. Normál Linux felhasználóval ez általában működik, mert a fájl world-readable.
+A Node-RED folyamatának olvasnia kell a `/proc/stat` fájlt. Normál Linux felhasználóval ez általában működik.
 
-Ha Node-RED konténerben fut, győződj meg róla, hogy a host `/proc` elérhető (pl. Docker: `-v /proc:/host/proc:ro` és a function node-ban `/host/proc/stat` útvonal).
-
-## Testreszabás
-
-- **Frissítési időköz:** az Inject node `repeat` mezője (alapértelmezés: 5 mp)
-- **Színzónák a mérőn:** `seg1` = 50%, `seg2` = 80% (zöld / sárga / piros)
-- **Grafikon időtartama:** Chart node `removeOlder` = 1 óra
+Dockerben: `-v /proc:/host/proc:ro` és a function node-ban `/host/proc/stat` útvonal.
 
 ## Hibaelhárítás
 
 | Probléma | Megoldás |
 |----------|----------|
-| Nincs `ui_gauge` node | Telepítsd: `npm install node-red-dashboard`, majd restart |
-| Dashboard 404 | Deploy után ellenőrizd: `http://host:1880/ui` |
+| `unknown: ui_gauge` | Telepítsd: `npm install node-red-dashboard`, restart, használd a `-v1.json` fájlt |
+| `unknown: ui-gauge` | Telepítsd: `npm install @flowfuse/node-red-dashboard`, restart, használd a fő `.json` fájlt |
+| Dashboard 404 | Ellenőrizd az URL-t: `/dashboard` (v2) vagy `/ui` (v1) |
 | Mindig 0% | Várj legalább egy frissítési ciklust (5 mp) |
 | Permission denied | Ellenőrizd a `/proc/stat` olvasási jogát |
 
-## Fájlok
+## Testreszabás
 
-- `flows/cpu-dashboard-linux.json` – importálható Node-RED flow
+- **Frissítési időköz:** Inject node → `repeat` (alapértelmezés: 5 mp)
+- **Színzónák:** Gauge node → segments (0% zöld, 50% sárga, 80% piros)
